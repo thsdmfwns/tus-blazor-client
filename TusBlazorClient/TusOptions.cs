@@ -5,7 +5,7 @@ public class TusOptions
     /// <summary>
     /// The upload creation URL which will be used to create new uploads.
     /// </summary>
-    public Uri Endpoint { get; set; }
+    public required Uri Endpoint { get; set; }
     
     /// <summary>
     /// An optional function that will be called each time progress information is available. The arguments will be bytesSent and bytesTotal.
