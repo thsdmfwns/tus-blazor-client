@@ -1,12 +1,29 @@
+using Microsoft.JSInterop;
+
 namespace TusBlazorClient;
 
 public class TusHttpResponse
 {
-    public int StatusCode { get; set; } = 0;
-    public string? Body { get; set; }
-    public string GetHeader(string key)
+    private TusHttpResponse(IJSObjectReference jsObject, int statusCode, string body)
     {
-        //todo GetHeader
-        throw new MissingMethodException();
+        JsObject = jsObject;
+        StatusCode = statusCode;
+        Body = body;
+    }
+
+    public IJSObjectReference JsObject { get; }
+    public int StatusCode { get; }
+    public string Body { get; }
+    public async Task<string> GetHeaderAsync(string key) => await JsObject.InvokeAsync<string>("getHeader", key);
+
+    public static async Task<TusHttpResponse?> FromJsObjectAsync(IJSObjectReference? jsObjectReference)
+    {
+        if (jsObjectReference is null)
+        {
+            return null;
+        }
+        return new TusHttpResponse(jsObjectReference, 
+            await jsObjectReference.InvokeAsync<int>("getStatus"),
+            await jsObjectReference.InvokeAsync<string>("getBody"));
     }
 }

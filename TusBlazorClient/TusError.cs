@@ -2,9 +2,16 @@ namespace TusBlazorClient;
 
 public class TusError
 {
-    public string ErrorMessage { get; set; } = string.Empty;
-    public TusHttpRequest? OriginalHttpRequest { get; set; }
-    public TusHttpResponse? OriginalHttpResponse { get; set; }
+    public TusError(string errorMessage, TusHttpRequest? originalHttpRequest, TusHttpResponse? originalHttpResponse)
+    {
+        ErrorMessage = errorMessage;
+        OriginalHttpRequest = originalHttpRequest;
+        OriginalHttpResponse = originalHttpResponse;
+    }
+
+    public string ErrorMessage { get; }
+    public TusHttpRequest? OriginalHttpRequest { get; }
+    public TusHttpResponse? OriginalHttpResponse { get; }
 }
 
 
