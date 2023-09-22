@@ -1,7 +1,7 @@
-function IsSupported() {
-    return tus.isSupported;
+export function IsSupported() {
+    return window.tus.isSupported;
 }
 
-function CanStoreUrls() {
-    return tus.canStoreURLs;
+export function CanStoreUrls() {
+    return window.tus.canStoreURLs;
 }

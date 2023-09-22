@@ -1,9 +1,33 @@
 ﻿@page "/"
+@inject IJSRuntime JS
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Hello...</h1>
 
-Welcome to your new app.
+<h1>TusSupport : @TusSupport</h1>
+<h1>UrlStoreSupport : @UrlStoreSupport</h1>
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code
+{
+    private TusClient _tusClient;
+    private string TusSupport = "false";
+    private string UrlStoreSupport = "false";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _tusClient = await TusClient.Create(JS);
+            var tusSupport = await _tusClient.IsSupported();
+            var storeSupport = await _tusClient.CanStoreUrls();
+        
+            TusSupport = tusSupport.ToString();
+            UrlStoreSupport = storeSupport.ToString();
+            
+            StateHasChanged();
+        }
+    }
+
+
+}

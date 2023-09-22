@@ -1,13 +1,26 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
-    <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>TusBlazorClient</AssemblyName>
+    <RootNamespace>TusBlazorClient</RootNamespace>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Microsoft.JSInterop.WebAssembly" Version="7.0.11" />
-    </ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="7.0.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot\tusBlazorClient.js">
+      <LogicalName>blazor:js:tusBlazorClient.js</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
 
 </Project>

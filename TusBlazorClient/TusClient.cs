@@ -2,37 +2,45 @@ using Microsoft.JSInterop;
 
 namespace TusBlazorClient;
 
-public class TusClient
+public class TusClient : IAsyncDisposable
 {
     private readonly IJSObjectReference _script;
-    public TusClient(IJSRuntime jsRuntime)
+    public TusClient(IJSObjectReference jsObjectReference)
     {
-        _script = jsRuntime.InvokeAsync<IJSObjectReference>("import", "./tusBlazorClient.js").Result;
+        _script = jsObjectReference;
+    }
+
+    public static async Task<TusClient> Create(IJSRuntime jsRuntime)
+    {
+        return new TusClient(await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/TusBlazorClient/tusBlazorClient.js"));
     }
     
-    public static async Task<bool> IsSupported(IJSRuntime currentJsRuntime)
+    public async Task<bool> IsSupported()
     {
         try
         {
-            return await currentJsRuntime.InvokeAsync<bool>("tus.isSupported");
+            return await _script.InvokeAsync<bool>("IsSupported");
         }
-        catch (Exception exception)
+        catch (Exception)
         {
-            Console.WriteLine(exception.Message);
             return false;
         }
     }
 
-    public static async Task<bool> CanStoreUrls(IJSRuntime currentJsRuntime)
+    public async Task<bool> CanStoreUrls()
     {
         try
         {
-            return await currentJsRuntime.InvokeAsync<bool>("tus.canStoreURLs");
+            return await _script.InvokeAsync<bool>("CanStoreUrls");
         }
-        catch (Exception exception)
+        catch (Exception)
         {
-            Console.WriteLine(exception.Message);
             return false;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _script.DisposeAsync();
     }
 }
