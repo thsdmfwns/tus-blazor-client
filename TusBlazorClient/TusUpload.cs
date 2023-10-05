@@ -73,7 +73,7 @@ public class TusUpload
     }
 
     [JSInvokable]
-    public async Task<bool> OnError(string errorMsg, IJSObjectReference? requestObject,
+    public async Task<bool> OnShouldRetry(string errorMsg, IJSObjectReference? requestObject,
         IJSObjectReference? responseObject, long retryAttempt, TusOptions tusOptions)
     {
         var req = await TusHttpRequest.FromJsObjectAsync(requestObject);

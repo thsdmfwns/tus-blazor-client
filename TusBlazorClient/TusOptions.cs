@@ -6,6 +6,11 @@ public class TusOptions
     /// The upload creation URL which will be used to create new uploads.
     /// </summary>
     public required Uri Endpoint { get; set; }
+
+    /// <summary>
+    /// A number indicating the maximum size of a PATCH request body in bytes. The default value (Infinity) means that tus-js-client will try to upload the entire file in one request. This setting is also required if the input file is a reader/readable stream.
+    /// </summary>
+    public long? ChunkSize { get; set; } = null;
     
     /// <summary>
     /// An optional function that will be called each time progress information is available. The arguments will be bytesSent and bytesTotal.
