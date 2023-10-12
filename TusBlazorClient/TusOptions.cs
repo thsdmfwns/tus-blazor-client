@@ -1,4 +1,9 @@
-﻿namespace TusBlazorClient;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
+using Microsoft.JSInterop;
+
+namespace TusBlazorClient;
 
 public class TusOptions
 {
@@ -17,6 +22,7 @@ public class TusOptions
     /// <typeparam name="Left">BytesSent</typeparam>
     /// <typeparam name="Right">BytesTotal</typeparam>
     /// </summary>
+    [JsonIgnore]
     public Action<long, long>? OnProgress { get; set; }
     
     /// <summary>
@@ -25,17 +31,20 @@ public class TusOptions
     /// <typeparam name="Middle">BytesAccepted</typeparam>
     /// <typeparam name="Right">BytesTotal</typeparam>
     /// </summary>
+    [JsonIgnore]
     public Action<long, long, long>? OnChunkComplete { get; set; }
     
     /// <summary>
     /// An optional function called when the upload finished successfully.
     /// </summary>
+    [JsonIgnore]
     public Action? OnSuccess { get; set; }
     
     /// <summary>
     /// An optional function called once an error appears. The argument will be an Error instance with additional information about the involved requests.
     /// <typeparam name="TusError">Error</typeparam>
     /// </summary>
+    [JsonIgnore]
     public Action<TusError>? OnError { get; set; }
 
     //todo Change TusOption Parameter
@@ -49,10 +58,10 @@ public class TusOptions
     /// The argument will be an Error instance with additional information about the involved requests.</para>
     /// <typeparam name="TusError">Error</typeparam>
     /// <typeparam name="Long">RetryAttempt</typeparam>
-    /// <typeparam name="TusOptions">Options</typeparam>
     /// <typeparam name="bool">Return value</typeparam>
     /// </summary>
-    public Func<TusError, long, TusOptions, bool>? OnShouldRetry { get; set; }
+    [JsonIgnore]
+    public Func<TusError, long, bool>? OnShouldRetry { get; set; }
 
     /// <summary>
     /// An object with custom header values used in all requests. Useful for adding authentication details.
@@ -131,10 +140,63 @@ public class TusOptions
     /// <summary>
     /// An optional function that will be called before a HTTP request is sent out.
     /// </summary>
+    [JsonIgnore]
     public Action<TusHttpRequest>? OnBeforeRequest { get; set; }
 
     /// <summary>
     /// An optional function that will be called after a HTTP response has been received.
     /// </summary>
-    public Action<TusHttpRequest, TusHttpResponse>? OnAfterResponse { get; set; }
+    [JsonIgnore]
+    public Action<TusHttpRequest?, TusHttpResponse?>? OnAfterResponse { get; set; }
+    
+    [JSInvokable]
+    public void InvokeOnProgress(long bytesSent, long bytesTotal)
+    {
+        OnProgress?.Invoke(bytesSent, bytesTotal);
+    }
+    
+    [JSInvokable]
+    public void InvokeOnChunkComplete(long chunkSize ,long bytesAccepted, long bytesTotal)
+    {
+        OnChunkComplete?.Invoke(chunkSize, bytesAccepted, bytesTotal);
+    }
+
+    [JSInvokable]
+    public void InvokeOnSuccess()
+    {
+        OnSuccess?.Invoke();
+    }
+    
+    [JSInvokable]
+    public void InvokeOnError(string errorMsg, TusHttpRequest request, TusHttpResponse response)
+    {
+        if (OnError is null) return;
+        var req = !string.IsNullOrEmpty(request.Method) ? request : null;
+        var res = response.StatusCode <= 0 ? response : null;
+        OnError?.Invoke(new TusError(errorMsg, req, res));
+    }
+
+    [JSInvokable]
+    public bool InvokeOnShouldRetry(string errorMsg, TusHttpRequest request, TusHttpResponse response, long retryAttempt)
+    {
+        if (OnShouldRetry is null)
+        {
+            return true;
+        }
+        var req = !string.IsNullOrEmpty(request.Method) ? request : null;
+        var res = response.StatusCode <= 0 ? response : null;
+        return OnShouldRetry.Invoke(new TusError(errorMsg, req, res), retryAttempt);
+    }
+    
+    [JSInvokable]
+    public void InvokeOnBeforeRequest(TusHttpRequest request)
+    {
+        OnBeforeRequest?.Invoke(request);
+    }
+    
+    [JSInvokable]
+    public void InvokeOnAfterResponse(TusHttpRequest request, TusHttpResponse response)
+    {
+        OnAfterResponse?.Invoke(request, response);
+    }
 }

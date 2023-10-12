@@ -1,9 +1,15 @@
+using System.Text.Json.Serialization;
+
 namespace TusBlazorClient;
 
 public class TusPreviousUpload
 {
-    public long? Size { get; set; }
-    public Dictionary<string, string> Metadata { get; set; }
-    public string CreationTime { get; set; }
-    public string UrlStorageKey { get; set; }
+    [JsonPropertyName("size")]
+    public long? Size { get; init; }
+    [JsonPropertyName("metadata")]
+    public Dictionary<string, string> Metadata { get; init; }
+    [JsonPropertyName("creationTime")]
+    public string CreationTime { get; init; }
+    [JsonPropertyName("urlStorageKey")]
+    public string UrlStorageKey { get; init; }
 }

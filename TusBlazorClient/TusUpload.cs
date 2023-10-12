@@ -1,106 +1,55 @@
+using System.Text.Json;
 using Microsoft.JSInterop;
-using Microsoft.JSInterop.Implementation;
 
 namespace TusBlazorClient;
 
-public class TusUpload
+public class TusUpload : IAsyncDisposable
 {
-    public TusUpload(IJSObjectReference fIleObject, TusOptions options)
+    private TusUpload(IJSObjectReference uploadJsObjectReference, TusOptions options)
     {
-        FIleObject = fIleObject;
-        Options = options;
-        _dotNetObjectReference = DotNetObjectReference.Create(this);
+        _jsObjectReference = uploadJsObjectReference;
+        _options = options;
     }
 
-    private readonly DotNetObjectReference<TusUpload> _dotNetObjectReference;
-    public TusOptions Options { get; }
-    public IJSObjectReference FIleObject { get; }
+    private readonly TusOptions _options;
+    private readonly IJSObjectReference _jsObjectReference;
 
+    public static async ValueTask<TusUpload> Create(IJSObjectReference script, TusOptions options, JsFileRef fileRef)
+    {
+        await using var file = await fileRef.ToJsObjectRef();
+        var optObject = DotNetObjectReference.Create(options);
+        var uploadRef = await script.InvokeAsync<IJSObjectReference>("GetUplaod", file, options, optObject);
+        return new TusUpload(uploadRef, options);
+    }
+    
     public async Task Start()
     {
-        //todo set method
-        throw new MissingMethodException();
+        await _jsObjectReference.InvokeVoidAsync("start");
     }
 
     public async Task Abort(bool shouldTerminate)
     {
-        //todo set method
-        throw new MissingMethodException();
+        await _jsObjectReference.InvokeVoidAsync("abort", shouldTerminate);
     }
 
     public async Task Terminate(Uri uri, TusOptions? options)
     {
-        //todo set method
-        throw new MissingMethodException();
+        await _jsObjectReference.InvokeVoidAsync("terminate", uri.ToString());
     }
 
-    public async Task<List<TusPreviousUpload>> FindPreviousUpload()
+    public async ValueTask<List<TusPreviousUpload>?> FindPreviousUpload()
     {
-        //todo set method
-        throw new MissingMethodException();
+        return await _jsObjectReference.InvokeAsync<List<TusPreviousUpload>>("findPreviousUploads");
     }
 
     public async Task ResumeFromPreviousUpload(TusPreviousUpload previousUpload)
     {
-        //todo set method
-        throw new MissingMethodException();
+        await _jsObjectReference.InvokeVoidAsync("resumeFromPreviousUpload", previousUpload);
     }
 
-    [JSInvokable]
-    public void OnProgress(long bytesSent, long bytesTotal)
+    public async ValueTask DisposeAsync()
     {
-        Options.OnProgress?.Invoke(bytesSent, bytesTotal);
-    }
-    
-    [JSInvokable]
-    public void OnChunkComplete(long chunkSize ,long bytesAccepted, long bytesTotal)
-    {
-        Options.OnChunkComplete?.Invoke(chunkSize, bytesAccepted, bytesTotal);
-    }
-
-    [JSInvokable]
-    public void OnSuccess()
-    {
-        Options.OnSuccess?.Invoke();
-    }
-    
-    [JSInvokable]
-    public async Task OnError(string errorMsg, IJSObjectReference? requestObject, IJSObjectReference? responseObject)
-    {
-        var req = await TusHttpRequest.FromJsObjectAsync(requestObject);
-        var res = await TusHttpResponse.FromJsObjectAsync(requestObject);
-        Options.OnError?.Invoke(new TusError(errorMsg, req, res));
-    }
-
-    [JSInvokable]
-    public async Task<bool> OnShouldRetry(string errorMsg, IJSObjectReference? requestObject,
-        IJSObjectReference? responseObject, long retryAttempt, TusOptions tusOptions)
-    {
-        var req = await TusHttpRequest.FromJsObjectAsync(requestObject);
-        var res = await TusHttpResponse.FromJsObjectAsync(requestObject);
-        return Options.OnShouldRetry?.Invoke(new TusError(errorMsg, req, res), retryAttempt, tusOptions) ?? true;
-    }
-    
-    [JSInvokable]
-    public async Task OnBeforeRequest(IJSObjectReference requestObject)
-    {
-        var req = await TusHttpRequest.FromJsObjectAsync(requestObject);
-        if (req is null)
-        {
-            return;
-        }
-        Options.OnBeforeRequest?.Invoke(req);
-    }
-    
-    [JSInvokable]
-    public async Task OnAfterResponse(IJSObjectReference requestObject, IJSObjectReference responseObject)
-    {
-        var req = await TusHttpRequest.FromJsObjectAsync(requestObject);
-        var res = await TusHttpResponse.FromJsObjectAsync(responseObject);
-        if (req is null || res is null)
-        {
-            return;
-        }
-        Options.OnAfterResponse?.Invoke(req, res);
+        GC.SuppressFinalize(this);
+        await _jsObjectReference.DisposeAsync();
     }
 }
