@@ -23,6 +23,7 @@ export function GetFile(htmlElement, index){
 }
 
 export function GetUplaod(file, opt, dotnetObject) {
+    console.log(JSON.stringify(opt));
     return new window.tus.Upload(file, {
         endpoint: opt.endpoint,
         retryDelays: opt.retryDelays,
@@ -38,6 +39,7 @@ export function GetUplaod(file, opt, dotnetObject) {
         parallelUploads: opt.parallelUploads,
         parallelUploadBoundaries: opt.parallelUploadBoundaries,
         onError: function (err) {
+            if (opt.isNullOnError) return;
             let req = err.originalRequest
                 ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL()) 
                 : new HttpRequest();
@@ -50,25 +52,30 @@ export function GetUplaod(file, opt, dotnetObject) {
             dotnetObject.invokeMethodAsync("InvokeOnError", err.toString(), req, res);
         },
         onProgress: function (bytesUploaded, bytesTotal) {
+            if (opt.isNullOnProgress) return;
             dotnetObject.invokeMethodAsync("InvokeOnProgress", bytesUploaded, bytesTotal);
         },
         onChunkComplete: function (chunkSize, bytesUploaded, bytesTotal) {
+            if (opt.isNullOnChunkComplete) return;
             dotnetObject.invokeMethodAsync("InvokeOnChunkComplete", chunkSize, bytesUploaded, bytesTotal);
         },
         onSuccess: function () {
+            if (opt.isNullOnSuccess) return;
             dotnetObject.invokeMethodAsync("InvokeOnSuccess");
         },
         onBeforeRequest: function (ogReq) {
+            if (opt.isNullOnBeforeRequest) return;
             let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
             dotnetObject.invokeMethod("InvokeOnBeforeRequest", req);
         },
         onAfterResponse: function (ogReq, ogRes) {
+            if (opt.isNullOnAfterResponse) return;
             let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
             let res = new HttpResponse(ogRes.getStatus(), ogRes.getBody(), parseHeader(ogRes.getUnderlyingObject().getAllResponseHeaders()));
-            console.log(JSON.stringify(res));
             dotnetObject.invokeMethod("InvokeOnAfterResponse", req, res);
         },
         onShouldRetry: function (err, retryAttempt, _) {
+            if (opt.isNullOnShouldRetry) return;
             let req = err.originalRequest !== null
                 ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL())
                 : new HttpRequest();
