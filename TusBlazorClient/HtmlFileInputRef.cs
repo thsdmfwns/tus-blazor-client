@@ -5,18 +5,18 @@ namespace TusBlazorClient;
 
 public class HtmlFileInputRef
 {
-    private readonly ElementReference _element;
+    public ElementReference Element { get; init; }
     private readonly IJSObjectReference _script;
 
     internal HtmlFileInputRef(ElementReference inputElementReference, IJSObjectReference scripRef)
     {
-        _element = inputElementReference;
+        Element = inputElementReference;
         _script = scripRef;
     }
 
     public async ValueTask<int> Length()
     {
-        return await _script.InvokeAsync<int>("GetFileListLength", _element);
+        return await _script.InvokeAsync<int>("GetFileListLength", Element);
     }
 
     public async ValueTask<List<JsFileRef>> GetFiles()
@@ -27,20 +27,22 @@ public class HtmlFileInputRef
 
     internal async ValueTask<IJSObjectReference> AtElement(int index)
     {
-        return await _script.InvokeAsync<IJSObjectReference>("GetFile", _element, index);
+        return await _script.InvokeAsync<IJSObjectReference>("GetFile", Element, index);
     }
 }
 
 public class JsFileRef
 {
     private readonly HtmlFileInputRef _fileInput;
-    private readonly int _index;
 
+    public int Index { get; init; } 
+    public ElementReference ElementReference { get; init; } 
     public JsFileRef(HtmlFileInputRef fileInput, int index)
     {
         _fileInput = fileInput;
-        _index = index;
+        ElementReference = fileInput.Element;
+        Index = index;
     }
 
-    public async ValueTask<IJSObjectReference> ToJsObjectRef() => await _fileInput.AtElement(_index);
+    public async ValueTask<IJSObjectReference> ToJsObjectRef() => await _fileInput.AtElement(Index);
 }

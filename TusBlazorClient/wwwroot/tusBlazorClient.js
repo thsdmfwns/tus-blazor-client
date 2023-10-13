@@ -22,8 +22,12 @@ export function GetFile(htmlElement, index){
     return htmlElement.files[index];
 }
 
-export function GetUplaod(file, opt, dotnetObject) {
-    console.log(JSON.stringify(opt));
+export function GetUploadByJsFileRef (jsFileRef, opt, dotnetObject) {
+    var file = jsFileRef.elementReference.files[jsFileRef.index];
+    return GetUpload(file, opt, dotnetObject);
+}
+
+export function GetUpload(file, opt, dotnetObject) {
     return new window.tus.Upload(file, {
         endpoint: opt.endpoint,
         retryDelays: opt.retryDelays,

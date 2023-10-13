@@ -16,11 +16,17 @@ public class TusUpload : IAsyncDisposable
     private readonly IJSObjectReference _jsObjectReference;
     private readonly IJSObjectReference _script;
 
-    public static async ValueTask<TusUpload> Create(IJSObjectReference script, TusOptions options, JsFileRef fileRef)
+    internal static async ValueTask<TusUpload> Create(IJSObjectReference script, TusOptions options, IJSObjectReference fileJsObject)
     {
-        await using var file = await fileRef.ToJsObjectRef();
         var optObject = DotNetObjectReference.Create(options);
-        var uploadRef = await script.InvokeAsync<IJSObjectReference>("GetUplaod", file, options, optObject);
+        var uploadRef = await script.InvokeAsync<IJSObjectReference>("GetUpload", fileJsObject, options, optObject);
+        return new TusUpload(uploadRef, options, script);
+    }
+    
+    internal static async ValueTask<TusUpload> Create(IJSObjectReference script, TusOptions options, JsFileRef fileRef)
+    {
+        var optObject = DotNetObjectReference.Create(options);
+        var uploadRef = await script.InvokeAsync<IJSObjectReference>("GetUploadByJsFileRef", fileRef, options, optObject);
         return new TusUpload(uploadRef, options, script);
     }
     

@@ -18,6 +18,11 @@ public class TusClient : IAsyncDisposable
         return new TusClient(await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/TusBlazorClient/tusBlazorClient.js"));
     }
     
+    public async Task<TusUpload> Upload(IJSObjectReference fileObjectRef, TusOptions options)
+    {
+        return await TusUpload.Create(_script, options, fileObjectRef);
+    }
+    
     public async Task<TusUpload> Upload(JsFileRef fileRef, TusOptions options)
     {
         return await TusUpload.Create(_script, options, fileRef);
