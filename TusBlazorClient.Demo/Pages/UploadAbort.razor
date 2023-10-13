@@ -1,0 +1,96 @@
+@page "/uploadAbort"
+@inject IJSRuntime JS
+@using System.Text.Json
+@using System.Runtime.CompilerServices
+@implements IAsyncDisposable
+<h3>uploadAbort</h3>
+<text>url</text>
+<input id="url" type="text" @bind="_url"/>
+<br/>
+<text>chunk size</text>
+<input id="chunkSize" type="text" @bind="chunkSize"/>
+<br/>
+<text>file</text>
+<input id="file" type="file" @ref="_fileElement"/>
+<br/>
+<button id="upload-btn" onclick="@upload">upload</button>
+<button id="resume-btn" onclick="@resume">resume</button>
+<br/>
+<textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
+@code {
+    private string _output = "";
+    private TusClient _tusClient;
+    string? _url = "http://172.17.0.3:8080/files";
+    string? chunkSize = "null";
+    TusUpload? _tusUpload;
+    private ElementReference _fileElement;
+    bool isFisrt = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _tusClient = await TusClient.Create(JS);
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _tusClient.DisposeAsync();
+    }
+
+    private async Task upload()
+    {
+        if (_tusUpload is not null)
+        {
+            await _tusUpload.Start();
+            return;
+        }
+        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var opt = new TusOptions
+        {
+            ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
+            Endpoint = new Uri(_url),
+            OnProgress = async (bytesend, total) =>
+            {
+                _output += $"byte Sent : {bytesend} | total : {total}\n";
+                StateHasChanged();
+                if (((double)bytesend / total) > 0.5d )
+                {
+                    if (isFisrt)
+                    {
+                        await _tusUpload?.Abort(false);
+                        isFisrt = false;
+                    }
+                }
+            },
+            OnSuccess = async () =>
+            {
+                _output += "Upload Success\n";
+                StateHasChanged();
+                if (_tusUpload is not null)
+                {
+                    await _tusUpload.DisposeAsync();
+                    _tusUpload = null;
+                }
+            },
+            OnError = (err) =>
+            {
+                _output += $"err : {err.ErrorMessage}\n";
+                StateHasChanged();
+            },
+            Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
+        };
+        _tusUpload = await _tusClient.Upload(file, opt);
+        await _tusUpload.Start();
+    }
+
+    private async Task resume()
+    {
+        var pres = await _tusUpload.FindPreviousUpload();
+        pres.ForEach(x => _output += $"\n{JsonSerializer.Serialize(x.TusPreviousUpload)}\n\n");
+        await _tusUpload.ResumeFromPreviousUpload(pres.First());
+        await _tusUpload.Start();
+    }
+}

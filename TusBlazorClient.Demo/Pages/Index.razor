@@ -1,30 +1,17 @@
 ﻿@page "/"
-@using System.Text.Json
-@using System.Text.Json.Serialization
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello...</h1>
-
 <h1>TusSupport : @TusSupport</h1>
 <h1>UrlStoreSupport : @UrlStoreSupport</h1>
-
-<input type="file" @ref="fileElement" multiple oninput="@OnFilesChange"/>
-<h1>FilesCount : @filesCount</h1>
-<h1>FilesString : @filesString</h1>
-
-<button onclick="@showUploadJson">show upload json</button>
 
 @code
 {
     private TusClient _tusClient;
     private string TusSupport = "false";
     private string UrlStoreSupport = "false";
-    private ElementReference fileElement;
-    private int filesCount = 0;
-    private string filesString = string.Empty;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -39,40 +26,10 @@
             StateHasChanged();
         }
     }
-    private async Task OnFilesChange()
-    { 
-        var fileInputRef = _tusClient.GetHtmlFileInputRef(fileElement);
-        filesCount = await fileInputRef.Length();
-        var files = await fileInputRef.GetFiles();
-        var file = files.First();
-        await using var obj = await file.ToJsObjectRef();
-        var str = await obj.InvokeAsync<string>("toString");
-        filesString = str;
-        Console.WriteLine();
-        StateHasChanged();
-    }
+    
 
-    private async Task showUploadJson()
+    public async ValueTask DisposeAsync()
     {
-        var file =  (await _tusClient.GetHtmlFileInputRef(fileElement).GetFiles()).First();
-        var opt = new TusOptions
-        {
-            Endpoint = new Uri("http://172.17.0.3:8080/files"),
-            OnProgress = (bytesend, total) =>
-            {
-                Console.WriteLine($"byte Sent : {bytesend} | total : {total}");
-            },
-            OnSuccess = () => Console.WriteLine("Done"),
-            OnError = (err) =>
-            {
-                Console.WriteLine($"err : {err.ErrorMessage}");
-            },
-            OnAfterResponse = (req, res) => 
-                Console.WriteLine($"req : {JsonSerializer.Serialize(req)} | res : {JsonSerializer.Serialize(res)} | res header : {JsonSerializer.Serialize(res!.Headers)}"),
-            Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
-        };
-        await using var upload = await _tusClient.Upload(file, opt);
-        Console.WriteLine("==========================================================\n start upload \n========================================================= ");
-        await upload.Start();
+        await _tusClient.DisposeAsync();
     }
 }

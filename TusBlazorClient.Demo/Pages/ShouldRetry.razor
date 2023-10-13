@@ -1,0 +1,73 @@
+@page "/shouldRetry"
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+<h3>shouldRetry</h3>
+<text>url</text>
+<input id="url" type="text" @bind="_url"/>
+<br/>
+<text>chunk size</text>
+<input id="chunkSize" type="text" @bind="chunkSize"/>
+<br/>
+<text>file</text>
+<input id="file" type="file" @ref="_fileElement"/>
+<br/>
+<button id="upload-btn" onclick="@upload">upload</button>
+<br/>
+<textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
+@code {
+    private string _output = "";
+    private TusClient _tusClient;
+    string? _url = "http://172.17.0.3:8080";
+    string? chunkSize = "null";
+    private ElementReference _fileElement;
+    private int retryCount = 1;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _tusClient = await TusClient.Create(JS);
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _tusClient.DisposeAsync();
+    }
+
+    private async Task upload()
+    {
+        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var opt = new TusOptions
+        {
+            ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
+            Endpoint = new Uri(_url),
+            OnProgress = (bytesend, total) =>
+            {
+                _output += $"byte Sent : {bytesend} | total : {total}\n";
+                StateHasChanged();
+            },
+            OnSuccess = () =>
+            {
+                _output += "Upload Success\n";
+                StateHasChanged();
+            },
+            OnError = (err) =>
+            {
+                _output += $"err : {err.ErrorMessage}\n";
+                StateHasChanged();
+                retryCount = 0;
+            },
+            RetryDelays = new List<int>() {1, 1, 1, 1, 1},
+            OnShouldRetry = (_, _) =>
+            {
+                _output += $"trycount = {retryCount++} \n";
+                return true;
+            },
+            Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
+        };
+        await using var upload = await _tusClient.Upload(file, opt);
+        await upload.Start();
+    }
+}
