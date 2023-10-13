@@ -25,7 +25,7 @@ public class TusOptions
     [JsonIgnore]
     public Action<long, long>? OnProgress { get; set; }
     
-    public bool isNullOnProgress => OnProgress is null;
+    public bool IsNullOnProgress => OnProgress is null;
     
     /// <summary>
     /// An optional function that will be called each time a PATCH has been successfully completed. The arguments will be chunkSize, bytesAccepted, bytesTotal.
@@ -35,14 +35,14 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<long, long, long>? OnChunkComplete { get; set; }
-    public bool isNullOnChunkComplete => OnChunkComplete is null;
+    public bool IsNullOnChunkComplete => OnChunkComplete is null;
     
     /// <summary>
     /// An optional function called when the upload finished successfully.
     /// </summary>
     [JsonIgnore]
     public Action? OnSuccess { get; set; }
-    public bool isNullOnSuccess => OnSuccess is null;
+    public bool IsNullOnSuccess => OnSuccess is null;
 
     
     /// <summary>
@@ -51,7 +51,7 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<TusError>? OnError { get; set; }
-    public bool isNullOnError => OnError is null;
+    public bool IsNullOnError => OnError is null;
 
     /// <summary>
     ///  An optional function called once an error appears and before retrying.
@@ -67,7 +67,7 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Func<TusError, long, bool>? OnShouldRetry { get; set; }
-    public bool isNullOnShouldRetry => OnShouldRetry is null;
+    public bool IsNullOnShouldRetry => OnShouldRetry is null;
 
     /// <summary>
     /// An object with custom header values used in all requests. Useful for adding authentication details.
@@ -148,14 +148,14 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<TusHttpRequest>? OnBeforeRequest { get; set; }
-    public bool isNullOnBeforeRequest => OnBeforeRequest is null;
+    public bool IsNullOnBeforeRequest => OnBeforeRequest is null;
 
     /// <summary>
     /// An optional function that will be called after a HTTP response has been received.
     /// </summary>
     [JsonIgnore]
     public Action<TusHttpRequest?, TusHttpResponse?>? OnAfterResponse { get; set; }
-    public bool isNullOnAfterResponse => OnAfterResponse is null;
+    public bool IsNullOnAfterResponse => OnAfterResponse is null;
 
     [JSInvokable]
     public void InvokeOnProgress(long bytesSent, long bytesTotal)

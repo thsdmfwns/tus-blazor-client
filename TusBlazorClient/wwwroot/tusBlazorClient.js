@@ -90,6 +90,11 @@ export function GetUplaod(file, opt, dotnetObject) {
     });
 }
 
+export async function resumeFromPreviousUpload(tusUpload, index) {
+    let pres = await tusUpload.findPreviousUploads();
+    tusUpload.resumeFromPreviousUpload(pres[index]);
+}
+
 function parseHeader(headerText){
     const arr = headerText.trim().split(/[\r\n]+/);
     const headerMap = {};

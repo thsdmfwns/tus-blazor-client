@@ -5,21 +5,23 @@ namespace TusBlazorClient;
 
 public class TusUpload : IAsyncDisposable
 {
-    private TusUpload(IJSObjectReference uploadJsObjectReference, TusOptions options)
+    private TusUpload(IJSObjectReference uploadJsObjectReference, TusOptions options, IJSObjectReference script)
     {
         _jsObjectReference = uploadJsObjectReference;
         _options = options;
+        _script = script;
     }
 
     private readonly TusOptions _options;
     private readonly IJSObjectReference _jsObjectReference;
+    private readonly IJSObjectReference _script;
 
     public static async ValueTask<TusUpload> Create(IJSObjectReference script, TusOptions options, JsFileRef fileRef)
     {
         await using var file = await fileRef.ToJsObjectRef();
         var optObject = DotNetObjectReference.Create(options);
         var uploadRef = await script.InvokeAsync<IJSObjectReference>("GetUplaod", file, options, optObject);
-        return new TusUpload(uploadRef, options);
+        return new TusUpload(uploadRef, options, script);
     }
     
     public async Task Start()
@@ -37,14 +39,16 @@ public class TusUpload : IAsyncDisposable
         await _jsObjectReference.InvokeVoidAsync("terminate", uri.ToString());
     }
 
-    public async ValueTask<List<TusPreviousUpload>?> FindPreviousUpload()
+    public async ValueTask<List<TusPreviousUploadRef>> FindPreviousUpload()
     {
-        return await _jsObjectReference.InvokeAsync<List<TusPreviousUpload>>("findPreviousUploads");
+        var list = await _jsObjectReference.InvokeAsync<List<TusPreviousUpload>>("findPreviousUploads");
+        return Enumerable.Range(0, list.Count)
+            .Select(x => new TusPreviousUploadRef(x, list.ElementAt(x))).ToList();
     }
 
-    public async Task ResumeFromPreviousUpload(TusPreviousUpload previousUpload)
+    public async Task ResumeFromPreviousUpload(TusPreviousUploadRef previousUploadRef)
     {
-        await _jsObjectReference.InvokeVoidAsync("resumeFromPreviousUpload", previousUpload);
+        await _script.InvokeVoidAsync("resumeFromPreviousUpload", _jsObjectReference, previousUploadRef.Index);
     }
 
     public async ValueTask DisposeAsync()
