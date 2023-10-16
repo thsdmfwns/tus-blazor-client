@@ -61,7 +61,8 @@
             },
             OnError = (err) =>
             {
-                _output += $"err : {err.ErrorMessage}\n";
+                _output += "===OnError\n";
+                _output += $"{err.ErrorMessage}\n";
                 StateHasChanged();
             },
             Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},

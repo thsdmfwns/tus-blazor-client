@@ -55,6 +55,7 @@
             },
             OnError = (err) =>
             {
+                _output += $"===OnError\n";
                 _output += $"err : {err.ErrorMessage}\n";
                 StateHasChanged();
                 retryCount = 0;
@@ -62,6 +63,7 @@
             RetryDelays = new List<int>() {1, 1, 1, 1, 1},
             OnShouldRetry = (_, _) =>
             {
+                _output += $"===OnShouldRetry\n";
                 _output += $"trycount = {retryCount++} \n";
                 return true;
             },

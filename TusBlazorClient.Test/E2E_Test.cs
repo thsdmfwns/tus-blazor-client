@@ -1,4 +1,5 @@
 using System.Net.Mime;
+using System.Security.Cryptography.X509Certificates;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Support.UI;
 
@@ -58,7 +59,7 @@ public class E2eTest : TestBase
         Assert.That(firstProgress, Is.Not.EqualTo(0));
         Assert.That(finalOutput, Does.Contain(SuccessMsg));
     }
-    
+
     [Test]
     public void ResumeFromPreviousUpload()
     {
@@ -76,6 +77,34 @@ public class E2eTest : TestBase
         var firstProgress = long.Parse(firstProgressLog!.Split(":")[1]);
         Assert.That(firstProgress, Is.Not.EqualTo(0));
         Assert.That(finalOutput, Does.Contain(SuccessMsg));
+    }
+
+    [Test]
+    public void ShouldRetry()
+    {
+        Init("http://localhost:5288/shouldRetry", isError: true);
+        _driver.FindElement(By.Id("upload-btn")).Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains("===OnError"));
+        var finalOutput = _driver.FindElement(By.Id("output")).Text;
+        var outputs = finalOutput.Split("\n").ToList();
+        var retryCount = outputs.Count(x => string.Equals(x, "===OnShouldRetry"));
+        Assert.That(retryCount, Is.GreaterThanOrEqualTo(5));
+        Assert.That(outputs, Does.Contain("===OnError"));
+    }
+    
+    [Test]
+    public void ShouldNotRetry()
+    {
+        Init("http://localhost:5288/shouldNoRetry", isError: true);
+        _driver.FindElement(By.Id("upload-btn")).Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains("===OnError"));
+        var finalOutput = _driver.FindElement(By.Id("output")).Text;
+        var outputs = finalOutput.Split("\n").ToList();
+        var retryCount = outputs.Count(x => string.Equals(x, "===OnShouldRetry"));
+        Assert.That(retryCount, Is.LessThanOrEqualTo(1));
+        Assert.That(outputs, Does.Contain("===OnError"));
     }
 
 }
