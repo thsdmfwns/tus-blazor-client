@@ -1,9 +1,9 @@
-@page "/uploadAbort"
+@page "/ResumeFromPreviousUpload"
 @inject IJSRuntime JS
 @using System.Text.Json
 @using System.Runtime.CompilerServices
 @implements IAsyncDisposable
-<h3>uploadAbort</h3>
+<h3 id="DemoName">uploadAbort</h3>
 <text>url</text>
 <input id="url" type="text" @bind="_url"/>
 <br/>
@@ -20,11 +20,12 @@
 @code {
     private string _output = "";
     private TusClient _tusClient;
-    string? _url = "http://172.17.0.3:8080/files";
-    string? chunkSize = "null";
+    string? _url = "";
+    string? chunkSize = "";
     TusUpload? _tusUpload;
     private ElementReference _fileElement;
     bool isFisrt = true;
+    bool isFisrtProgress = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -55,19 +56,26 @@
             OnProgress = async (bytesend, total) =>
             {
                 _output += $"byte Sent : {bytesend} | total : {total}\n";
-                StateHasChanged();
+                if (isFisrtProgress)
+                {
+                    _output += $"===firstProgress:{bytesend}\n";
+                    isFisrtProgress = false;
+                }
                 if (((double)bytesend / total) > 0.5d )
                 {
                     if (isFisrt)
                     {
                         await _tusUpload?.Abort(false);
+                        _output += "====Stop\n";
                         isFisrt = false;
+                        isFisrtProgress = true;
                     }
                 }
+                StateHasChanged();
             },
             OnSuccess = async () =>
             {
-                _output += "Upload Success\n";
+                _output += "===Upload Success\n";
                 StateHasChanged();
                 if (_tusUpload is not null)
                 {
@@ -88,6 +96,8 @@
 
     private async Task resume()
     {
+        _output = "";
+        StateHasChanged();
         var pres = await _tusUpload.FindPreviousUpload();
         pres.ForEach(x => _output += $"\n{JsonSerializer.Serialize(x.TusPreviousUpload)}\n\n");
         await _tusUpload.ResumeFromPreviousUpload(pres.First());

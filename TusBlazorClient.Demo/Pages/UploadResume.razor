@@ -1,19 +1,19 @@
-@page "/upload"
+@page "/uploadResume"
 @inject IJSRuntime JS
+@using System.Text.Json
 @implements IAsyncDisposable
-
-<h3 id="DemoName">upload</h3>
+<h3 id="DemoName">uploadResume</h3>
 <text>url</text>
 <input id="url" type="text" @bind="_url"/>
 <br/>
 <text>chunk size</text>
 <input id="chunkSize" type="text" @bind="chunkSize"/>
-<text> => null means infinity</text>
 <br/>
 <text>file</text>
 <input id="file" type="file" @ref="_fileElement"/>
 <br/>
 <button id="upload-btn" onclick="@upload">upload</button>
+<button id="resume-btn" onclick="@resume">resume</button>
 <br/>
 <textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
 @code {
@@ -21,8 +21,11 @@
     private TusClient _tusClient;
     string? _url = "";
     string? chunkSize = "";
+    TusUpload? _tusUpload;
     private ElementReference _fileElement;
-    
+    bool isFisrt = true;
+    bool isFisrtProgress = true;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -39,25 +42,43 @@
 
     private async Task upload()
     {
+        if (_tusUpload is not null)
+        {
+            await _tusUpload.Start();
+            return;
+        }
         var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
         var opt = new TusOptions
         {
             ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
             Endpoint = new Uri(_url),
-            OnProgress = (bytesend, total) =>
+            OnProgress = async (bytesend, total) =>
             {
-                _output += "===OnProgress\n";
                 _output += $"byte Sent : {bytesend} | total : {total}\n";
+                if (isFisrtProgress)
+                {
+                    _output += $"===firstProgress:{bytesend}\n";
+                    isFisrtProgress = false;
+                }
+                if (((double)bytesend / total) > 0.5d )
+                {
+                    if (isFisrt)
+                    {
+                        await _tusUpload?.Abort(false);
+                        _output += "====Stop\n";
+                        isFisrt = false;
+                        isFisrtProgress = true;
+                    }
+                }
                 StateHasChanged();
             },
-            OnSuccess = () =>
+            OnSuccess = async () =>
             {
                 _output += "===Upload Success\n";
                 StateHasChanged();
-            },
-            OnChunkComplete = (_, _, _) =>
-            {
-                _output += "===OnChunkComplete\n";
+                if (_tusUpload is null) return;
+                await _tusUpload.DisposeAsync();
+                _tusUpload = null;
             },
             OnError = (err) =>
             {
@@ -66,7 +87,13 @@
             },
             Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
         };
-        await using var upload = await _tusClient.Upload(file, opt);
-        await upload.Start();
+        _tusUpload = await _tusClient.Upload(file, opt);
+        await _tusUpload.Start();
+    }
+
+    private async Task resume()
+    {
+        _output = "";
+        await _tusUpload.Start();
     }
 }

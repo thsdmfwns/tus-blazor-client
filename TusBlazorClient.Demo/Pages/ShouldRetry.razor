@@ -1,7 +1,7 @@
 @page "/shouldRetry"
 @inject IJSRuntime JS
 @implements IAsyncDisposable
-<h3>shouldRetry</h3>
+<h3 id="DemoName">shouldRetry</h3>
 <text>url</text>
 <input id="url" type="text" @bind="_url"/>
 <br/>
@@ -17,8 +17,8 @@
 @code {
     private string _output = "";
     private TusClient _tusClient;
-    string? _url = "http://172.17.0.3:8080";
-    string? chunkSize = "null";
+    string? _url = "";
+    string? chunkSize = "";
     private ElementReference _fileElement;
     private int retryCount = 1;
     
