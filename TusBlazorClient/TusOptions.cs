@@ -187,13 +187,9 @@ public class TusOptions
     [JSInvokable]
     public bool InvokeOnShouldRetry(string errorMsg, TusHttpRequest request, TusHttpResponse response, long retryAttempt)
     {
-        if (OnShouldRetry is null)
-        {
-            return true;
-        }
         var req = !string.IsNullOrEmpty(request.Method) ? request : null;
         var res = response.StatusCode <= 0 ? response : null;
-        return OnShouldRetry.Invoke(new TusError(errorMsg, req, res), retryAttempt);
+        return OnShouldRetry?.Invoke(new TusError(errorMsg, req, res), retryAttempt) ?? true;
     }
     
     [JSInvokable]
