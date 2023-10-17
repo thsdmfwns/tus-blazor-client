@@ -36,10 +36,97 @@ export async function resumeFromPreviousUpload(tusUpload, index) {
     tusUpload.resumeFromPreviousUpload(pres[index]);
 }
 
+export function GetAliveTusUploadOption(tusUpload) {
+    let opt = tusUpload.options;
+    console.log(opt);
+    return {
+        endpoint: opt.endpoint,
+        retryDelays: opt.retryDelays,
+        metadata: opt.metadata,
+        headers: opt.headers,
+        chunkSize: opt.chunkSize ?? Infinity,
+        uploadUrl: opt.uploadUrl,
+        storeFingerprintForResuming: opt.storeFingerprintForResuming,
+        removeFingerprintOnSuccess: opt.removeFingerprintOnSuccess,
+        uploadLengthDeferred: opt.uploadLengthDeferred,
+        uploadDataDuringCreation: opt.uploadDataDuringCreation,
+        addRequestId: opt.addRequestId,
+        parallelUploads: opt.parallelUploads,
+        parallelUploadBoundaries: opt.parallelUploadBoundaries
+    }
+}
+
+export function SetTusUploadOption(tusUpload, options, dotnetObj, optNullCheck) {
+    let opt = GetUploadOption(options, dotnetObj, optNullCheck);
+    let uploadOpt = tusUpload.options;
+    uploadOpt.endpoint = opt.endpoint;
+    uploadOpt.retryDelays = opt.retryDelays;
+    uploadOpt.metadata = opt.metadata;
+    uploadOpt.headers = opt.headers;
+    uploadOpt.chunkSize = opt.chunkSize ?? Infinity;
+    uploadOpt.uploadUrl = opt.uploadUrl;
+    uploadOpt.storeFingerprintForResuming = opt.storeFingerprintForResuming;
+    uploadOpt.removeFingerprintOnSuccess = opt.removeFingerprintOnSuccess;
+    uploadOpt.uploadLengthDeferred = opt.uploadLengthDeferred;
+    uploadOpt.uploadDataDuringCreation = opt.uploadDataDuringCreation;
+    uploadOpt.addRequestId = opt.addRequestId;
+    uploadOpt.parallelUploads = opt.parallelUploads;
+    uploadOpt.parallelUploadBoundaries = opt.parallelUploadBoundaries;
+    uploadOpt.onError = function (err) {
+        if (optNullCheck.isNullOnError) return;
+        let req = err.originalRequest
+            ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL())
+            : new HttpRequest();
+        let res = err.originalResponse
+            ? new HttpResponse(
+                err.originalResponse.getStatus(),
+                err.originalResponse.getBody(),
+                parseHeader(err.originalResponse.getUnderlyingObject().getAllResponseHeaders()))
+            : new HttpResponse();
+        dotnetObj.invokeMethodAsync("InvokeOnError", err.toString(), req, res);
+    };
+    uploadOpt.onProgress = function (bytesUploaded, bytesTotal) {
+        if (optNullCheck.isNullOnProgress) return;
+        dotnetObj.invokeMethodAsync("InvokeOnProgress", bytesUploaded, bytesTotal);
+    };
+    uploadOpt.onChunkComplete = function (chunkSize, bytesUploaded, bytesTotal) {
+        if (optNullCheck.isNullOnChunkComplete) return;
+        dotnetObj.invokeMethodAsync("InvokeOnChunkComplete", chunkSize, bytesUploaded, bytesTotal);
+    };
+    uploadOpt.onSuccess = function () {
+        if (optNullCheck.isNullOnSuccess) return;
+        dotnetObj.invokeMethodAsync("InvokeOnSuccess");
+    };
+    uploadOpt.onBeforeRequest = function (ogReq) {
+        if (optNullCheck.isNullOnBeforeRequest) return;
+        let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
+        dotnetObj.invokeMethod("InvokeOnBeforeRequest", req);
+    };
+    uploadOpt.onAfterResponse = function (ogReq, ogRes) {
+        if (optNullCheck.isNullOnAfterResponse) return;
+        let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
+        let res = new HttpResponse(ogRes.getStatus(), ogRes.getBody(), parseHeader(ogRes.getUnderlyingObject().getAllResponseHeaders()));
+        dotnetObj.invokeMethod("InvokeOnAfterResponse", req, res);
+    };
+    uploadOpt.onShouldRetry = function (err, retryAttempt, _) {
+        if (optNullCheck.isNullOnShouldRetry) return;
+        let req = err.originalRequest !== null
+            ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL())
+            : new HttpRequest();
+        let res = err.originalResponse !== null
+            ? new HttpResponse(
+                err.originalResponse.getStatus(),
+                err.originalResponse.getBody(),
+                parseHeader(err.originalResponse.getUnderlyingObject().getAllResponseHeaders()))
+            : new HttpResponse();
+        return dotnetObj.invokeMethod("InvokeOnShouldRetry", err.toString(), req, res, retryAttempt);
+    };
+}
+
 function GetUploadOption(opt, dotnetObject, optNullCheck){
     return {
         endpoint: opt.endpoint,
-            retryDelays: opt.retryDelays,
+        retryDelays: opt.retryDelays,
         metadata: opt.metadata,
         headers: opt.headers,
         chunkSize: opt.chunkSize ?? Infinity,
@@ -63,7 +150,7 @@ function GetUploadOption(opt, dotnetObject, optNullCheck){
                 parseHeader(err.originalResponse.getUnderlyingObject().getAllResponseHeaders()))
             : new HttpResponse();
         dotnetObject.invokeMethodAsync("InvokeOnError", err.toString(), req, res);
-    },
+        },
         onProgress: function (bytesUploaded, bytesTotal) {
             if (optNullCheck.isNullOnProgress) return;
             dotnetObject.invokeMethodAsync("InvokeOnProgress", bytesUploaded, bytesTotal);

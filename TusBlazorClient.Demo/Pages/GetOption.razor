@@ -1,0 +1,77 @@
+@page "/GetOption"
+@inject IJSRuntime JS
+@using System.Text.Json
+@implements IAsyncDisposable
+
+<h3 id="DemoName">upload</h3>
+<text>url</text>
+<input id="url" type="text" @bind="_url"/>
+<br/>
+<text>chunk size</text>
+<input id="chunkSize" type="text" @bind="chunkSize"/>
+<text> => null means infinity</text>
+<br/>
+<text>file</text>
+<input id="file" type="file" @ref="_fileElement"/>
+<br/>
+<button id="upload-btn" onclick="@upload">upload</button>
+<br/>
+<textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
+@code {
+    private string _output = "";
+    private TusClient _tusClient;
+    string? _url = "";
+    string? chunkSize = "";
+    private ElementReference _fileElement;
+    private TusUpload _tusUpload;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _tusClient = await TusClient.Create(JS);
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _tusClient.DisposeAsync();
+    }
+
+    private async Task upload()
+    {
+        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var opt = new TusOptions
+        {
+            ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
+            Endpoint = new Uri(_url),
+            OnProgress = (bytesend, total) =>
+            {
+                _output += "===OnProgress\n";
+                _output += $"byte Sent : {bytesend} | total : {total}\n";
+                StateHasChanged();
+            },
+            OnSuccess = async () =>
+            {
+                _output += "===Upload Success\n";
+                var opt = await _tusUpload.GetOptions();
+                _output += $"===CurrentOption:{JsonSerializer.Serialize(opt)}";
+                StateHasChanged();
+            },
+            OnChunkComplete = (_, _, _) =>
+            {
+                _output += "===OnChunkComplete\n";
+            },
+            OnError = (err) =>
+            {
+                _output += "===OnError\n";
+                _output += $"{err.ErrorMessage}\n";
+                StateHasChanged();
+            },
+            Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
+        };
+        _tusUpload = await _tusClient.Upload(file, opt);
+        await _tusUpload.Start();
+    }
+}

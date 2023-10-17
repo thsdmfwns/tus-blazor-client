@@ -139,4 +139,46 @@ public class E2eTest : TestBase
         Assert.That(finalOutput, Does.Contain("===OnBeforeRequest"));
     }
 
+    [Test]
+    public void SetOption()
+    {
+        //===ChunkSend:
+        Init("http://localhost:5288/SetOption", chunkSize: 50000);
+        _driver.FindElement(By.Id("upload-btn")).Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains("====Stop"));
+        Task.Delay(10).Wait();
+        _driver.FindElement(By.Id("resume-btn")).Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains(SuccessMsg));
+        var finalOutput = _driver.FindElement(By.Id("output")).Text;
+        var outputs = finalOutput.Split("\n");
+        var firstProgressLog = outputs.SingleOrDefault(x => x.StartsWith("===firstProgress"));
+        Assert.That(firstProgressLog, Is.Not.Null);
+        var firstProgress = long.Parse(firstProgressLog!.Split(":")[1]);
+        var chunksizes = outputs.Where(x => x.Equals("===ChunkSend:15000")).ToList();
+        Assert.That(firstProgress, Is.Not.EqualTo(0));
+        Assert.That(chunksizes, Is.Not.Empty);
+        Assert.That(finalOutput, Does.Contain(SuccessMsg));
+    }
+
+    [Test]
+    public void GetOption()
+    {
+        Init("http://localhost:5288/GetOption");
+        IWebElement uploadButton = _driver.FindElement(By.Id("upload-btn"));
+        uploadButton.Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains(SuccessMsg));
+        var finalOutput = _driver.FindElement(By.Id("output")).Text;
+        var outputs = finalOutput.Split("\n");
+        var optLog = outputs.SingleOrDefault(x => x.StartsWith("===CurrentOption:"));
+        var opt = JsonSerializer.Deserialize<TusOptions>(optLog.Replace("===CurrentOption:", ""));
+        Assert.That(optLog, Is.Not.Null);
+        Assert.That(opt, Is.Not.Null);
+        Assert.That(finalOutput, Does.Contain(SuccessMsg));
+        Assert.That(finalOutput, Does.Contain("===OnProgress"));
+        Assert.That(finalOutput, Does.Contain("===OnChunkComplete"));
+    }
+
 }
