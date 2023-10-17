@@ -19,7 +19,12 @@ public class E2eTest : TestBase
         WaitUntilLoaded();
         _driver.FindElement(By.Id("url")).SendKeys(isError ? ErrorUrl : ServerUrl);
         _driver.FindElement(By.Id("file")).SendKeys(FilePath);
-        _driver.FindElement(By.Id("chunkSize")).SendKeys(chunkSize.ToString() ?? "null");
+        var chunkSizeStr = chunkSize.ToString();
+        if (string.IsNullOrEmpty(chunkSizeStr))
+        {
+            chunkSizeStr = "null";
+        }
+        _driver.FindElement(By.Id("chunkSize")).SendKeys(chunkSizeStr);
     }
 
     [Test]

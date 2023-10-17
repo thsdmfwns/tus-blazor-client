@@ -22,15 +22,24 @@ export function GetFile(htmlElement, index){
     return htmlElement.files[index];
 }
 
-export function GetUploadByJsFileRef (jsFileRef, opt, dotnetObject) {
+export function GetUploadByJsFileRef (jsFileRef, opt, dotnetObject, optNullCheck) {
     var file = jsFileRef.elementReference.files[jsFileRef.index];
-    return GetUpload(file, opt, dotnetObject);
+    return GetUpload(file, opt, dotnetObject, optNullCheck);
 }
 
-export function GetUpload(file, opt, dotnetObject) {
-    return new window.tus.Upload(file, {
+export function GetUpload(file, opt, dotnetObject, optNullCheck) {
+    return new window.tus.Upload(file, GetUploadOption(opt, dotnetObject, optNullCheck));
+}
+
+export async function resumeFromPreviousUpload(tusUpload, index) {
+    let pres = await tusUpload.findPreviousUploads();
+    tusUpload.resumeFromPreviousUpload(pres[index]);
+}
+
+function GetUploadOption(opt, dotnetObject, optNullCheck){
+    return {
         endpoint: opt.endpoint,
-        retryDelays: opt.retryDelays,
+            retryDelays: opt.retryDelays,
         metadata: opt.metadata,
         headers: opt.headers,
         chunkSize: opt.chunkSize ?? Infinity,
@@ -43,43 +52,43 @@ export function GetUpload(file, opt, dotnetObject) {
         parallelUploads: opt.parallelUploads,
         parallelUploadBoundaries: opt.parallelUploadBoundaries,
         onError: function (err) {
-            if (opt.isNullOnError) return;
-            let req = err.originalRequest
-                ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL()) 
-                : new HttpRequest();
-            let res = err.originalResponse
-                ? new HttpResponse(
-                    err.originalResponse.getStatus(),
-                    err.originalResponse.getBody(),
-                    parseHeader(err.originalResponse.getUnderlyingObject().getAllResponseHeaders()))
-                : new HttpResponse();
-            dotnetObject.invokeMethodAsync("InvokeOnError", err.toString(), req, res);
-        },
+        if (optNullCheck.isNullOnError) return;
+        let req = err.originalRequest
+            ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL())
+            : new HttpRequest();
+        let res = err.originalResponse
+            ? new HttpResponse(
+                err.originalResponse.getStatus(),
+                err.originalResponse.getBody(),
+                parseHeader(err.originalResponse.getUnderlyingObject().getAllResponseHeaders()))
+            : new HttpResponse();
+        dotnetObject.invokeMethodAsync("InvokeOnError", err.toString(), req, res);
+    },
         onProgress: function (bytesUploaded, bytesTotal) {
-            if (opt.isNullOnProgress) return;
+            if (optNullCheck.isNullOnProgress) return;
             dotnetObject.invokeMethodAsync("InvokeOnProgress", bytesUploaded, bytesTotal);
         },
         onChunkComplete: function (chunkSize, bytesUploaded, bytesTotal) {
-            if (opt.isNullOnChunkComplete) return;
+            if (optNullCheck.isNullOnChunkComplete) return;
             dotnetObject.invokeMethodAsync("InvokeOnChunkComplete", chunkSize, bytesUploaded, bytesTotal);
         },
         onSuccess: function () {
-            if (opt.isNullOnSuccess) return;
+            if (optNullCheck.isNullOnSuccess) return;
             dotnetObject.invokeMethodAsync("InvokeOnSuccess");
         },
         onBeforeRequest: function (ogReq) {
-            if (opt.isNullOnBeforeRequest) return;
+            if (optNullCheck.isNullOnBeforeRequest) return;
             let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
             dotnetObject.invokeMethod("InvokeOnBeforeRequest", req);
         },
         onAfterResponse: function (ogReq, ogRes) {
-            if (opt.isNullOnAfterResponse) return;
+            if (optNullCheck.isNullOnAfterResponse) return;
             let req = new HttpRequest(ogReq.getMethod(), ogReq.getURL());
             let res = new HttpResponse(ogRes.getStatus(), ogRes.getBody(), parseHeader(ogRes.getUnderlyingObject().getAllResponseHeaders()));
             dotnetObject.invokeMethod("InvokeOnAfterResponse", req, res);
         },
         onShouldRetry: function (err, retryAttempt, _) {
-            if (opt.isNullOnShouldRetry) return;
+            if (optNullCheck.isNullOnShouldRetry) return;
             let req = err.originalRequest !== null
                 ? new HttpRequest(err.originalRequest.getMethod(), err.originalRequest.getURL())
                 : new HttpRequest();
@@ -91,12 +100,7 @@ export function GetUpload(file, opt, dotnetObject) {
                 : new HttpResponse();
             return dotnetObject.invokeMethod("InvokeOnShouldRetry", err.toString(), req, res, retryAttempt);
         }
-    });
-}
-
-export async function resumeFromPreviousUpload(tusUpload, index) {
-    let pres = await tusUpload.findPreviousUploads();
-    tusUpload.resumeFromPreviousUpload(pres[index]);
+    }
 }
 
 function parseHeader(headerText){

@@ -38,6 +38,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        await _tusUpload.DisposeAsync();
         await _tusClient.DisposeAsync();
     }
 

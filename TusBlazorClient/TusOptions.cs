@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.Extensions.Options;
+﻿using System.Text.Json.Serialization;
 using Microsoft.JSInterop;
 
 namespace TusBlazorClient;
@@ -10,7 +8,7 @@ public class TusOptions
     /// <summary>
     /// The upload creation URL which will be used to create new uploads.
     /// </summary>
-    public required Uri Endpoint { get; set; }
+    public Uri Endpoint { get; set; }
 
     /// <summary>
     /// A number indicating the maximum size of a PATCH request body in bytes. The default value (Infinity) means that tus-js-client will try to upload the entire file in one request. This setting is also required if the input file is a reader/readable stream.
@@ -25,7 +23,6 @@ public class TusOptions
     [JsonIgnore]
     public Action<long, long>? OnProgress { get; set; }
     
-    public bool IsNullOnProgress => OnProgress is null;
     
     /// <summary>
     /// An optional function that will be called each time a PATCH has been successfully completed. The arguments will be chunkSize, bytesAccepted, bytesTotal.
@@ -35,14 +32,12 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<long, long, long>? OnChunkComplete { get; set; }
-    public bool IsNullOnChunkComplete => OnChunkComplete is null;
     
     /// <summary>
     /// An optional function called when the upload finished successfully.
     /// </summary>
     [JsonIgnore]
     public Action? OnSuccess { get; set; }
-    public bool IsNullOnSuccess => OnSuccess is null;
 
     
     /// <summary>
@@ -51,7 +46,6 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<TusError>? OnError { get; set; }
-    public bool IsNullOnError => OnError is null;
 
     /// <summary>
     ///  An optional function called once an error appears and before retrying.
@@ -67,7 +61,6 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Func<TusError, long, bool>? OnShouldRetry { get; set; }
-    public bool IsNullOnShouldRetry => OnShouldRetry is null;
 
     /// <summary>
     /// An object with custom header values used in all requests. Useful for adding authentication details.
@@ -148,59 +141,10 @@ public class TusOptions
     /// </summary>
     [JsonIgnore]
     public Action<TusHttpRequest>? OnBeforeRequest { get; set; }
-    public bool IsNullOnBeforeRequest => OnBeforeRequest is null;
-
+    
     /// <summary>
     /// An optional function that will be called after a HTTP response has been received.
     /// </summary>
     [JsonIgnore]
     public Action<TusHttpRequest?, TusHttpResponse?>? OnAfterResponse { get; set; }
-    public bool IsNullOnAfterResponse => OnAfterResponse is null;
-
-    [JSInvokable]
-    public void InvokeOnProgress(long bytesSent, long bytesTotal)
-    {
-        OnProgress?.Invoke(bytesSent, bytesTotal);
-    }
-    
-    [JSInvokable]
-    public void InvokeOnChunkComplete(long chunkSize ,long bytesAccepted, long bytesTotal)
-    {
-        OnChunkComplete?.Invoke(chunkSize, bytesAccepted, bytesTotal);
-    }
-
-    [JSInvokable]
-    public void InvokeOnSuccess()
-    {
-        OnSuccess?.Invoke();
-    }
-    
-    [JSInvokable]
-    public void InvokeOnError(string errorMsg, TusHttpRequest request, TusHttpResponse response)
-    {
-        if (OnError is null) return;
-        var req = !string.IsNullOrEmpty(request.Method) ? request : null;
-        var res = response.StatusCode <= 0 ? response : null;
-        OnError?.Invoke(new TusError(errorMsg, req, res));
-    }
-
-    [JSInvokable]
-    public bool InvokeOnShouldRetry(string errorMsg, TusHttpRequest request, TusHttpResponse response, long retryAttempt)
-    {
-        var req = !string.IsNullOrEmpty(request.Method) ? request : null;
-        var res = response.StatusCode <= 0 ? response : null;
-        return OnShouldRetry?.Invoke(new TusError(errorMsg, req, res), retryAttempt) ?? true;
-    }
-    
-    [JSInvokable]
-    public void InvokeOnBeforeRequest(TusHttpRequest request)
-    {
-        OnBeforeRequest?.Invoke(request);
-    }
-    
-    [JSInvokable]
-    public void InvokeOnAfterResponse(TusHttpRequest request, TusHttpResponse response)
-    {
-        OnAfterResponse?.Invoke(request, response);
-    }
 }

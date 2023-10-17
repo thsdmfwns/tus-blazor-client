@@ -20,6 +20,7 @@
     string? _url = "";
     string? chunkSize = "";
     private ElementReference _fileElement;
+    private TusUpload _tusUpload;
     private int retryCount = 1;
     
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -33,6 +34,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        await _tusUpload.DisposeAsync();
         await _tusClient.DisposeAsync();
     }
 
@@ -69,7 +71,7 @@
             },
             Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
         };
-        await using var upload = await _tusClient.Upload(file, opt);
+        var upload = await _tusClient.Upload(file, opt);
         await upload.Start();
     }
 }
