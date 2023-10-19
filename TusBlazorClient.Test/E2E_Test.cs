@@ -8,29 +8,34 @@ namespace TusBlazorClient.Test;
 
 public class E2eTest : TestBase
 {
-    private const string FilePath = "/home/son/test-image.png";
-    private const string ServerUrl = "http://172.17.0.3:8080/files";
-    private const string ErrorUrl = "http://172.17.0.3:8080/";
-    private const string SuccessMsg = "===Upload Success";
-
-    private void Init(string url, bool isError = false, long? chunkSize = null)
-    {
-        _driver.Navigate().GoToUrl(url);
-        WaitUntilLoaded();
-        _driver.FindElement(By.Id("url")).SendKeys(isError ? ErrorUrl : ServerUrl);
-        _driver.FindElement(By.Id("file")).SendKeys(FilePath);
-        var chunkSizeStr = chunkSize.ToString();
-        if (string.IsNullOrEmpty(chunkSizeStr))
-        {
-            chunkSizeStr = "null";
-        }
-        _driver.FindElement(By.Id("chunkSize")).SendKeys(chunkSizeStr);
-    }
+    protected const string FilePath = "/home/son/test-image.png";
 
     [Test]
     public void Upload()
     {
-        Init("http://localhost:5288/upload");
+        Init("http://localhost:5288/upload", FilePath);
+        IWebElement uploadButton = _driver.FindElement(By.Id("upload-btn"));
+        uploadButton.Click();
+        new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
+            driver => driver.FindElement(By.Id("output")).Text.Contains(SuccessMsg));
+        var finalOutput = _driver.FindElement(By.Id("output")).Text;
+        var outputs = finalOutput.Split("\n");
+        var urlStr = outputs.Single(x => x.StartsWith("===UploadUrl:")).Replace("===UploadUrl:", "");
+        var fileInfoStr = outputs.Single(x => x.StartsWith("===uploadFile:")).Replace("===uploadFile:", "");
+        var jsFileInfo = JsonSerializer.Deserialize<JsFileInfo>(fileInfoStr);
+        var fileInfo = new FileInfo(FilePath);
+        Assert.That(jsFileInfo, Is.Not.Null);
+        Assert.That(jsFileInfo!.Name, Is.EqualTo(fileInfo.Name));
+        Assert.That(Uri.TryCreate(urlStr, UriKind.RelativeOrAbsolute ,out var _), Is.True);
+        Assert.That(finalOutput, Does.Contain(SuccessMsg));
+        Assert.That(finalOutput, Does.Contain("===OnProgress"));
+        Assert.That(finalOutput, Does.Contain("===OnChunkComplete"));
+    }
+
+    [Test]
+    public void UploadByJsObj()
+    {
+        Init("http://localhost:5288/uploadByJsObj", FilePath);
         IWebElement uploadButton = _driver.FindElement(By.Id("upload-btn"));
         uploadButton.Click();
         var finalOutput = _driver.FindElement(By.Id("output")).Text;
@@ -50,7 +55,7 @@ public class E2eTest : TestBase
     [Test]
     public void UploadResume()
     {
-        Init("http://localhost:5288/uploadResume", chunkSize: 50000);
+        Init("http://localhost:5288/uploadResume", FilePath,chunkSize: 50000);
         _driver.FindElement(By.Id("upload-btn")).Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
             driver => driver.FindElement(By.Id("output")).Text.Contains("====Stop"));
@@ -69,7 +74,7 @@ public class E2eTest : TestBase
     [Test]
     public void ResumeFromPreviousUpload()
     {
-        Init("http://localhost:5288/ResumeFromPreviousUpload", chunkSize: 50000);
+        Init("http://localhost:5288/ResumeFromPreviousUpload", FilePath, chunkSize: 50000);
         _driver.FindElement(By.Id("upload-btn")).Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
             driver => driver.FindElement(By.Id("output")).Text.Contains("====Stop"));
@@ -88,7 +93,7 @@ public class E2eTest : TestBase
     [Test]
     public void ShouldRetry()
     {
-        Init("http://localhost:5288/shouldRetry", isError: true);
+        Init("http://localhost:5288/shouldRetry", FilePath, isError: true);
         _driver.FindElement(By.Id("upload-btn")).Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
             driver => driver.FindElement(By.Id("output")).Text.Contains("===OnError"));
@@ -102,7 +107,7 @@ public class E2eTest : TestBase
     [Test]
     public void ShouldNotRetry()
     {
-        Init("http://localhost:5288/shouldNoRetry", isError: true);
+        Init("http://localhost:5288/shouldNoRetry", FilePath, isError: true);
         _driver.FindElement(By.Id("upload-btn")).Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
             driver => driver.FindElement(By.Id("output")).Text.Contains("===OnError"));
@@ -116,7 +121,7 @@ public class E2eTest : TestBase
     [Test]
     public void OnRequest()
     {
-        Init("http://localhost:5288/OnRequest");
+        Init("http://localhost:5288/OnRequest", FilePath);
         IWebElement uploadButton = _driver.FindElement(By.Id("upload-btn"));
         uploadButton.Click();
         var finalOutput = _driver.FindElement(By.Id("output")).Text;
@@ -125,8 +130,7 @@ public class E2eTest : TestBase
         var outputs = finalOutput.Split("\n");
         var responseHeaders = outputs
             .Where(x => x.StartsWith("Response : "))
-            .Select(x => x.Replace("Response : ", ""))
-            .Select(x => JsonSerializer.Deserialize<TusHttpResponse>(x))
+            .Select(x => JsonSerializer.Deserialize<TusHttpResponse>(x.Replace("Response : ", "")))
             .Where(x => x is not null)
             .Select(x => x!.Headers)
             .ToList();
@@ -143,7 +147,7 @@ public class E2eTest : TestBase
     public void SetOption()
     {
         //===ChunkSend:
-        Init("http://localhost:5288/SetOption", chunkSize: 50000);
+        Init("http://localhost:5288/SetOption", FilePath, chunkSize: 50000);
         _driver.FindElement(By.Id("upload-btn")).Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(
             driver => driver.FindElement(By.Id("output")).Text.Contains("====Stop"));
@@ -165,7 +169,7 @@ public class E2eTest : TestBase
     [Test]
     public void GetOption()
     {
-        Init("http://localhost:5288/GetOption");
+        Init("http://localhost:5288/GetOption", FilePath);
         IWebElement uploadButton = _driver.FindElement(By.Id("upload-btn"));
         uploadButton.Click();
         new WebDriverWait(_driver, TimeSpan.FromSeconds(5)).Until(

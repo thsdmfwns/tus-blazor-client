@@ -1,0 +1,48 @@
+@page "/fileInfo"
+@inject IJSRuntime JS
+@using System.Text.Json
+@implements IAsyncDisposable
+
+<h3 id="DemoName">upload</h3>
+<text>url</text>
+<input id="url" type="text" @bind="_url"/>
+<br/>
+<text>chunk size</text>
+<input id="chunkSize" type="text" @bind="chunkSize"/>
+<text> => null means infinity</text>
+<br/>
+<text>file</text>
+<input id="file" type="file" @ref="_fileElement"/>
+<br/>
+<button id="upload-btn" onclick="@upload">upload</button>
+<br/>
+<textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
+@code {
+    private string _output = "";
+    private TusClient _tusClient;
+    string? _url = "";
+    string? chunkSize = "";
+    private ElementReference _fileElement;
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _tusClient = await TusClient.Create(JS);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _tusClient.DisposeAsync();
+    }
+
+    private async Task upload()
+    {
+        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var info = await file.GetFileInfo();
+        _output += $"===fileInfo:{JsonSerializer.Serialize(info)}\n";
+        _output += $"parse:{info.LastModified}\n";
+        StateHasChanged();
+    }
+}

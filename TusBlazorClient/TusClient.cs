@@ -20,13 +20,18 @@ public class TusClient : IAsyncDisposable
     
     public async Task<TusUpload> Upload(IJSObjectReference fileObjectRef, TusOptions options)
     {
-        return await TusUpload.Create(_script, options, fileObjectRef);
+        var jsInvokeReference = DotNetObjectReference.Create(new TusOptionJsInvoke(options));
+        var uploadRef = await _script.InvokeAsync<IJSObjectReference>("GetUpload", fileObjectRef, options, jsInvokeReference, new TusOptionNullCheck(options));
+        return new TusUpload(uploadRef, options, _script, jsInvokeReference);
     }
     
     public async Task<TusUpload> Upload(JsFileRef fileRef, TusOptions options)
     {
-        return await TusUpload.Create(_script, options, fileRef);
+        var jsInvokeReference = DotNetObjectReference.Create(new TusOptionJsInvoke(options));
+        var uploadRef = await _script.InvokeAsync<IJSObjectReference>("GetUploadByJsFileRef", fileRef, options, jsInvokeReference, new TusOptionNullCheck(options));
+        return new TusUpload(uploadRef, options, _script, jsInvokeReference);
     }
+    
     
     public async Task<bool> IsSupported()
     {

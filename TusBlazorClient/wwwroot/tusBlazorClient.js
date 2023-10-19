@@ -1,5 +1,8 @@
 //DotNet.createJSObjectReference
 //dotNetHelper.invokeMethodAsync
+
+const assembly = "TusBlazorClient";
+
 export function IsSupported() {
     return window.tus.isSupported;
 }
@@ -10,20 +13,27 @@ export function CanStoreUrls() {
 
 export function GetFileListLength(htmlElement){
     if (!(htmlElement instanceof HTMLInputElement)) {
+        console.log(`${assembly} : The html element is not file input element.`)
         return -1;   
     }
     return htmlElement.files.length;
 }
 
-export function GetFile(htmlElement, index){
-    if (!(htmlElement instanceof HTMLInputElement)) {
-        return null;
-    }
-    return htmlElement.files[index];
+export function GetFile(jsFileRef){
+    return jsFileRef.elementReference.files[jsFileRef.index];
+}
+
+export function GetFileInfoFromJsFileRef(jsFileRef){
+    const file = jsFileRef.elementReference.files[jsFileRef.index];
+    return new FileInfo(file.name, file.size, file.lastModified);
+}
+
+export function GetFileInfo(file){
+    return new FileInfo(file.name, file.size, file.lastModified);
 }
 
 export function GetUploadByJsFileRef (jsFileRef, opt, dotnetObject, optNullCheck) {
-    var file = jsFileRef.elementReference.files[jsFileRef.index];
+    const file = jsFileRef.elementReference.files[jsFileRef.index];
     return GetUpload(file, opt, dotnetObject, optNullCheck);
 }
 
@@ -34,6 +44,14 @@ export function GetUpload(file, opt, dotnetObject, optNullCheck) {
 export async function resumeFromPreviousUpload(tusUpload, index) {
     let pres = await tusUpload.findPreviousUploads();
     tusUpload.resumeFromPreviousUpload(pres[index]);
+}
+
+export function GetFileFromUpload(tusUpload) {
+    return tusUpload.file;
+}
+
+export function GeUrlFromUpload(tusUpload) {
+    return tusUpload.url;
 }
 
 export function GetAliveTusUploadOption(tusUpload) {
@@ -216,5 +234,13 @@ class HttpResponse {
         this.statusCode = statusCode ?? -1;
         this.httpbody = httpBody;
         this.headers = headers ?? {};
+    }
+}
+
+class FileInfo {
+    constructor(name, size, lastModified) {
+        this.name = name;
+        this.size = size ?? 0;
+        this.lastModified = lastModified ?? "Unknown";
     }
 }

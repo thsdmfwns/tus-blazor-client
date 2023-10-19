@@ -1,6 +1,5 @@
-@page "/upload"
+@page "/uploadByJsObj"
 @inject IJSRuntime JS
-@using System.Text.Json
 @implements IAsyncDisposable
 
 <h3 id="DemoName">upload</h3>
@@ -41,7 +40,7 @@
 
     private async Task upload()
     {
-        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var file =  await (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First().ToJsObjectRef();
         var opt = new TusOptions
         {
             ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
@@ -54,11 +53,8 @@
             },
             OnSuccess = async () =>
             {
-                _output += "===Upload Success\n";
                 var url = await _tusUpload.GetUrl();
-                _output += $"===UploadUrl:{url}\n";
-                var fileInfo = await _tusUpload.GetFileInfo();
-                _output += $"===uploadFile:{JsonSerializer.Serialize(fileInfo)}";
+                _output += $"===Upload Success\n";
                 StateHasChanged();
             },
             OnChunkComplete = (_, _, _) =>
