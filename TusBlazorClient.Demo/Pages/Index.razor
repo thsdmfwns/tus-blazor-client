@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject IJSRuntime JS
+@inject TusClient TusClient
 @implements IAsyncDisposable
 
 <PageTitle>Index</PageTitle>
@@ -9,27 +9,22 @@
 
 @code
 {
-    private TusClient _tusClient;
     private string TusSupport = "false";
     private string UrlStoreSupport = "false";
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _tusClient = await TusClient.Create(JS);
-            var tusSupport = await _tusClient.IsSupported();
-            var storeSupport = await _tusClient.CanStoreUrls();
-        
+            var tusSupport = await TusClient.IsSupported();
+            var storeSupport = await TusClient.CanStoreUrls();
             TusSupport = tusSupport.ToString();
             UrlStoreSupport = storeSupport.ToString();
-            
             StateHasChanged();
         }
     }
-    
 
     public async ValueTask DisposeAsync()
     {
-        await _tusClient.DisposeAsync();
+        await TusClient.DisposeAsync();
     }
 }

@@ -6,27 +6,27 @@ namespace TusBlazorClient;
 
 public class TusUpload : IAsyncDisposable
 {
-    internal TusUpload(IJSObjectReference uploadUploadObjectReference, TusOptions options, IJSObjectReference script, DotNetObjectReference<TusOptionJsInvoke> optionJsInvokereference)
+    internal TusUpload(IJSObjectReference uploadUploadObjectReference, TusOptions options, DotNetObjectReference<TusOptionJsInvoke> optionJsInvokeReference, TusJsInterop tusJsInterop)
     {
         _uploadObjectReference = uploadUploadObjectReference;
         _options = options;
-        _script = script;
-        _optionJsInvokeReference = optionJsInvokereference;
+        _optionJsInvokeReference = optionJsInvokeReference;
+        _tusJsInterop = tusJsInterop;
     }
 
     private readonly TusOptions _options;
     private readonly IJSObjectReference _uploadObjectReference;
-    private readonly IJSObjectReference _script;
+    private readonly TusJsInterop _tusJsInterop;
     private DotNetObjectReference<TusOptionJsInvoke>? _optionJsInvokeReference;
-    
-    public async ValueTask<IJSObjectReference> GetFile() =>
-        await _script.InvokeAsync<IJSObjectReference>("GetFileFromUpload", _uploadObjectReference);
 
+    public async ValueTask<IJSObjectReference> GetFile() =>
+        await _tusJsInterop.GetFileFromUpload(_uploadObjectReference);
     public async ValueTask<JsFileInfo> GetFileInfo()
     {
         await using var file = await GetFile();
-        return await _script.InvokeAsync<JsFileInfo>("GetFileInfo", file);
+        return await _tusJsInterop.GetFileInfo(file);
     }
+    
     /// <summary>
     /// Get URL used to upload the file.
     /// This property will be set once an upload has been created,
@@ -34,11 +34,11 @@ public class TusUpload : IAsyncDisposable
     /// To resume an upload from a specific URL use the uploadUrl option instead.
     /// </summary>
     public async ValueTask<string> GetUrl() =>
-        await _script.InvokeAsync<string>("GeUrlFromUpload", _uploadObjectReference);
+        await _tusJsInterop.GeUrlFromUpload(_uploadObjectReference);
 
     public async ValueTask<TusOptions> GetOptions()
     {
-        var options = await _script.InvokeAsync<TusOptions>("GetAliveTusUploadOption", _uploadObjectReference);
+        var options = await _tusJsInterop.GetOptionFromUpload(_uploadObjectReference);
         //merge
         options.OnError = _options.OnError;
         options.OnProgress = _options.OnProgress;
@@ -56,7 +56,9 @@ public class TusUpload : IAsyncDisposable
         setOption.Invoke(options);
         _optionJsInvokeReference?.Dispose();
         _optionJsInvokeReference = DotNetObjectReference.Create(new TusOptionJsInvoke(options));
-        await _script.InvokeVoidAsync("SetTusUploadOption", _uploadObjectReference, options, _optionJsInvokeReference, new TusOptionNullCheck(options));
+        await _tusJsInterop.SetTusUploadOption(_uploadObjectReference, options, _optionJsInvokeReference,
+            new TusOptionNullCheck(options));
+        
     }
     
     public async Task Start()
@@ -83,7 +85,7 @@ public class TusUpload : IAsyncDisposable
 
     public async Task ResumeFromPreviousUpload(TusPreviousUploadRef previousUploadRef)
     {
-        await _script.InvokeVoidAsync("resumeFromPreviousUpload", _uploadObjectReference, previousUploadRef.Index);
+        await _tusJsInterop.ResumeFromPreviousUpload(_uploadObjectReference, previousUploadRef.Index);
     }
 
     public async ValueTask DisposeAsync()

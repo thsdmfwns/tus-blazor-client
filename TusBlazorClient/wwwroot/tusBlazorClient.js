@@ -54,7 +54,7 @@ export function GeUrlFromUpload(tusUpload) {
     return tusUpload.url;
 }
 
-export function GetAliveTusUploadOption(tusUpload) {
+export function GetOptionFromUpload(tusUpload) {
     let opt = tusUpload.options;
     console.log(opt);
     return {

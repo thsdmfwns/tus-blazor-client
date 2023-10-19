@@ -1,5 +1,5 @@
 @page "/OnRequest"
-@inject IJSRuntime JS
+@inject TusClient TusClient
 @using System.Text.Json
 @implements IAsyncDisposable
 
@@ -19,30 +19,20 @@
 <textarea id="output" style="max-width: 100%;" cols="50" rows="20">@_output</textarea>
 @code {
     private string _output = "";
-    private TusClient _tusClient;
     private TusUpload _tusUpload;
     string? _url = "";
     string? chunkSize = "";
     private ElementReference _fileElement;
     
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _tusClient = await TusClient.Create(JS);
-            StateHasChanged();
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
         await _tusUpload.DisposeAsync();
-        await _tusClient.DisposeAsync();
+        await TusClient.DisposeAsync();
     }
 
     private async Task upload()
     {
-        var file =  (await _tusClient.GetHtmlFileInputRef(_fileElement).GetFiles()).First();
+        var file =  (await TusClient.GetFileInputElement(_fileElement).GetFiles()).First();
         var opt = new TusOptions
         {
             ChunkSize = long.TryParse(chunkSize, out var size) ? size : null,
@@ -79,7 +69,7 @@
             },
             Metadata = new Dictionary<string, string>(){{"test", "test"}, {"test2", "test2"}},
         };
-        _tusUpload = await _tusClient.Upload(file, opt);
+        _tusUpload = await TusClient.Upload(file, opt);
         await _tusUpload.Start();
     }
 }

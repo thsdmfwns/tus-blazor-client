@@ -6,30 +6,26 @@ namespace TusBlazorClient;
 
 public class TusClient : IAsyncDisposable
 {
-    private readonly IJSObjectReference _script;
+    private readonly TusJsInterop _tusJsInterop;
 
-    private TusClient(IJSObjectReference jsObjectReference)
+    public TusClient(IJSRuntime jsRuntime)
     {
-        _script = jsObjectReference;
+        _tusJsInterop = new TusJsInterop(jsRuntime);
     }
 
-    public static async Task<TusClient> Create(IJSRuntime jsRuntime)
-    {
-        return new TusClient(await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./_content/TusBlazorClient/tusBlazorClient.js"));
-    }
-    
+
     public async Task<TusUpload> Upload(IJSObjectReference fileObjectRef, TusOptions options)
     {
         var jsInvokeReference = DotNetObjectReference.Create(new TusOptionJsInvoke(options));
-        var uploadRef = await _script.InvokeAsync<IJSObjectReference>("GetUpload", fileObjectRef, options, jsInvokeReference, new TusOptionNullCheck(options));
-        return new TusUpload(uploadRef, options, _script, jsInvokeReference);
+        var uploadRef = await _tusJsInterop.GetUpload(fileObjectRef, options, jsInvokeReference, new TusOptionNullCheck(options));
+        return new TusUpload(uploadRef, options, jsInvokeReference, _tusJsInterop);
     }
     
-    public async Task<TusUpload> Upload(JsFileRef fileRef, TusOptions options)
+    public async Task<TusUpload> Upload(JsFile file, TusOptions options)
     {
         var jsInvokeReference = DotNetObjectReference.Create(new TusOptionJsInvoke(options));
-        var uploadRef = await _script.InvokeAsync<IJSObjectReference>("GetUploadByJsFileRef", fileRef, options, jsInvokeReference, new TusOptionNullCheck(options));
-        return new TusUpload(uploadRef, options, _script, jsInvokeReference);
+        var uploadRef = await _tusJsInterop.GetUploadByJsFileRef(file, options, jsInvokeReference, new TusOptionNullCheck(options));
+        return new TusUpload(uploadRef, options, jsInvokeReference, _tusJsInterop);
     }
     
     
@@ -37,7 +33,7 @@ public class TusClient : IAsyncDisposable
     {
         try
         {
-            return await _script.InvokeAsync<bool>("IsSupported");
+            return await _tusJsInterop.IsSupported();
         }
         catch (Exception)
         {
@@ -49,7 +45,7 @@ public class TusClient : IAsyncDisposable
     {
         try
         {
-            return await _script.InvokeAsync<bool>("CanStoreUrls");
+            return await _tusJsInterop.CanStoreUrls();
         }
         catch (Exception)
         {
@@ -57,13 +53,13 @@ public class TusClient : IAsyncDisposable
         }
     }
     
-    public HtmlFileInputRef GetHtmlFileInputRef(ElementReference htmlElement)
+    public FileInputElement GetFileInputElement(ElementReference htmlElement)
     {
-        return new HtmlFileInputRef(htmlElement, _script);
+        return new FileInputElement(htmlElement, _tusJsInterop);
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _script.DisposeAsync();
+        await _tusJsInterop.DisposeAsync();
     }
 }
