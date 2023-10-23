@@ -6,11 +6,20 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>TusBlazorClient</AssemblyName>
     <RootNamespace>TusBlazorClient</RootNamespace>
+    <Title>TusBlazorClient</Title>
+    <Description>tus-blazor-client is a wrapper library project for tus-js-client that can be used in .NET Blazor.</Description>
+    <Copyright>MIT</Copyright>
+    <PackageProjectUrl>https://github.com/thsdmfwns/tus-blazor-client</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/thsdmfwns/tus-blazor-client/blob/main/LICENSE</PackageLicenseUrl>
+    <PackageTags>tus, blazor, wrapper, js, browser</PackageTags>
+    <PackageReleaseNotes>1.0.0</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
 
   <ItemGroup>
     <SupportedPlatform Include="browser" />
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup>
