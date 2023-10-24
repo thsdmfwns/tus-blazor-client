@@ -4,7 +4,7 @@ public class TusOptionNullCheck
 {
     private readonly TusOptions _tusOptions;
 
-    public TusOptionNullCheck(TusOptions tusOptions)
+    internal TusOptionNullCheck(TusOptions tusOptions)
     {
         _tusOptions = tusOptions;
     }

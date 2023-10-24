@@ -48,7 +48,7 @@ public class TusOptions
     public Action<TusError>? OnError { get; set; }
 
     /// <summary>
-    ///  An optional function called once an error appears and before retrying.
+    /// An optional function called once an error appears and before retrying.
     /// <para>When no callback is specified, the retry behavior will be the default one:
     /// any status codes of 409, 423 or any other than 4XX will be treated as a server error and the request will be retried automatically,
     /// as long as the browser does not indicate that we are offline.</para>
@@ -78,7 +78,7 @@ public class TusOptions
     public Uri? UploadUrl { get; set; }
 
     /// <summary>
-    /// An array or null, indicating how many milliseconds should pass before the next attempt to uploading will be started after the transfer has been interrupted.
+    /// An array or empty, indicating how many milliseconds should pass before the next attempt to uploading will be started after the transfer has been interrupted.
     /// <para>Default value: [0, 1000, 3000, 5000]</para>
     /// </summary>
     public List<int> RetryDelays { get; set; } = new List<int>() { 0, 1000, 3000, 5000 };

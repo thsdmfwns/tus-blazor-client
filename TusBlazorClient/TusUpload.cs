@@ -29,7 +29,7 @@ public class TusUpload : IAsyncDisposable
     
     /// <summary>
     /// Get URL used to upload the file.
-    /// This property will be set once an upload has been created,
+    /// The url will be set once an upload has been created,
     /// which happens at last when the onSuccess callback is invoked.
     /// To resume an upload from a specific URL use the uploadUrl option instead.
     /// </summary>

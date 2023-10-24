@@ -42,7 +42,7 @@ public class JsFile
     private readonly FileInputElement _fileInput;
     public ElementReference ElementReference => _fileInput.ElementReference;
     public int Index { get; init; } 
-    public JsFile(FileInputElement fileInput, int index)
+    internal JsFile(FileInputElement fileInput, int index)
     {
         _fileInput = fileInput;
         Index = index;

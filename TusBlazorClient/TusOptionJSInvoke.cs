@@ -7,7 +7,7 @@ public class TusOptionJsInvoke
     
     private readonly TusOptions _tusOptions;
 
-    public TusOptionJsInvoke(TusOptions tusOptions)
+    internal TusOptionJsInvoke(TusOptions tusOptions)
     {
         _tusOptions = tusOptions;
     }
