@@ -14,6 +14,7 @@
     <PackageTags>tus, blazor, wrapper, js, browser</PackageTags>
     <PackageReleaseNotes>1.0.0</PackageReleaseNotes>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
 

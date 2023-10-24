@@ -35,7 +35,7 @@ The file I/O speed in .NET Blazor is not suitable for sending large files, and t
 
 
 ### Install tus-blazor-client
-use [Nuget](https://www.nuget.org/packages/TusBlazorClient/) ```dotnet add package TusBlazorClient --version 1.0.0```
+use [Nuget](https://www.nuget.org/packages/TusBlazorClient/) ```dotnet add package TusBlazorClient --version 1.0.1```
 
 ### Add TusBlazorClient in ServiceProvider
 ```csharp
