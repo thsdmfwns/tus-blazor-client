@@ -21,6 +21,7 @@ The file I/O speed in .NET Blazor is not suitable for sending large files, and t
 - Minified version: [tus.min.js](https://cdn.jsdelivr.net/npm/tus-js-client@latest/dist/tus.min.js) (recommended)
 
 ```html
+<!-- project/wwwroot/index.html -->
 ...
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -38,6 +39,7 @@ use [Nuget](https://www.nuget.org/packages/TusBlazorClient/) ```dotnet add packa
 
 ### Add TusBlazorClient in ServiceProvider
 ```csharp
+// project/Program.cs
 ...
 builder.Services.AddTusBlazorClient();
 await builder.Build().RunAsync();
